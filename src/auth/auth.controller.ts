@@ -34,7 +34,7 @@ export class AuthController {
       };
     };
 
-    const frontendUrl = 'http://cabanacondecuscobybus.com/login-success';
+    const frontendUrl = 'http://tawantinsuyoperu.com/login-success';
     const token = user.access_token;
 
     res.redirect(`${frontendUrl}?token=${token}`);
