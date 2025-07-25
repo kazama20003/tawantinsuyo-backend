@@ -1,5 +1,6 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { Difficulty, PackageType } from './create-tour.dto';
+import { Difficulty } from './create-tour.dto';
+import { PackageType } from '../entities/tour.entity';
 import { TourCategory } from 'src/tours/entities/tour.entity';
 
 export class FilterTourDto {

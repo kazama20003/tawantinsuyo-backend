@@ -1,5 +1,6 @@
+// pagination.dto.ts
 import { Type } from 'class-transformer';
-import { IsOptional, IsPositive } from 'class-validator';
+import { IsIn, IsOptional, IsPositive, IsString } from 'class-validator';
 
 export class PaginationDto {
   @IsPositive()
@@ -11,4 +12,9 @@ export class PaginationDto {
   @IsOptional()
   @Type(() => Number)
   limit?: number = 10;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['es', 'en']) // aquí defines los idiomas permitidos
+  lang?: string;
 }

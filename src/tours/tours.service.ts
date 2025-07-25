@@ -38,7 +38,7 @@ export class ToursService {
 
   async findAll(paginationDto: PaginationDto): Promise<{
     message: string;
-    data: Tour[];
+    data: any[]; // puedes tipar como Partial<Tour> si prefieres
     pagination: {
       total: number;
       page: number;
@@ -46,7 +46,7 @@ export class ToursService {
       totalPages: number;
     };
   }> {
-    const { page = 1, limit = 10 } = paginationDto;
+    const { page = 1, limit = 10, lang = 'es' } = paginationDto;
     const skip = (page - 1) * limit;
 
     try {
@@ -55,16 +55,39 @@ export class ToursService {
           .find()
           .skip(skip)
           .limit(limit)
-          .populate('transportOptionIds') // 👈 Aquí el populate
+          .populate('transportOptionIds')
+          .lean() // 👈 Esto evita los problemas de tipos con `.toObject()`
           .exec(),
         this.tourModel.countDocuments(),
       ]);
 
+      // ✅ Traduce dinámicamente los campos multilenguaje
+      const translatedTours = tours.map((tour) => ({
+        ...tour,
+        title: tour.title?.[lang] || '',
+        subtitle: tour.subtitle?.[lang] || '',
+        highlights: tour.highlights?.map((h) => h?.[lang] || '') || [],
+        includes: tour.includes?.map((i) => i?.[lang] || '') || [],
+        notIncludes: tour.notIncludes?.map((i) => i?.[lang] || '') || [],
+        toBring: tour.toBring?.map((i) => i?.[lang] || '') || [],
+        conditions: tour.conditions?.map((i) => i?.[lang] || '') || [],
+        itinerary: tour.itinerary?.map((day) => ({
+          ...day,
+          title: day.title?.[lang] || '',
+          description: day.description?.[lang] || '',
+          route: day.route?.map((point) => ({
+            ...point,
+            location: point.location?.[lang] || '',
+            description: point.description?.[lang] || '',
+          })),
+        })),
+      }));
+
       return {
-        message: tours.length
+        message: translatedTours.length
           ? 'Lista de tours obtenida correctamente.'
           : 'No hay tours registrados.',
-        data: tours,
+        data: translatedTours,
         pagination: {
           total,
           page,
@@ -150,54 +173,120 @@ export class ToursService {
   async getTourIds() {
     return this.tourModel.find({}, '_id title'); // Solo devuelve _id y title
   }
-  async findBySlug(slug: string): Promise<{
+  async findBySlug(
+    slug: string,
+    lang: 'es' | 'en' = 'es',
+  ): Promise<{
     message: string;
-    data: Tour;
+    data: any;
   }> {
     try {
       const tour = await this.tourModel
         .findOne({ slug })
         .populate('transportOptionIds')
+        .lean()
         .exec();
 
       if (!tour) {
         throw new NotFoundException(
-          `No se encontró el tour con slug "${slug}".`,
+          lang === 'en'
+            ? `Tour with slug "${slug}" not found.`
+            : `No se encontró el tour con slug "${slug}".`,
         );
       }
 
+      // ✅ Traducir los campos al idioma solicitado
+      const translatedTour = {
+        ...tour,
+        title: tour.title?.[lang] || '',
+        subtitle: tour.subtitle?.[lang] || '',
+        duration: tour.duration?.[lang] || '',
+        highlights: tour.highlights?.map((h) => h?.[lang] || '') || [],
+        includes: tour.includes?.map((i) => i?.[lang] || '') || [],
+        notIncludes: tour.notIncludes?.map((i) => i?.[lang] || '') || [],
+        toBring: tour.toBring?.map((i) => i?.[lang] || '') || [],
+        conditions: tour.conditions?.map((i) => i?.[lang] || '') || [],
+        itinerary:
+          tour.itinerary?.map((day) => ({
+            ...day,
+            title: day.title?.[lang] || '',
+            description: day.description?.[lang] || '',
+            route: day.route?.map((point) => ({
+              ...point,
+              location: point.location?.[lang] || '',
+              description: point.description?.[lang] || '',
+            })),
+          })) || [],
+      };
+
       return {
-        message: 'Tour obtenido correctamente por slug.',
-        data: tour,
+        message:
+          lang === 'en'
+            ? 'Tour successfully retrieved by slug.'
+            : 'Tour obtenido correctamente por slug.',
+        data: translatedTour,
       };
     } catch {
       throw new InternalServerErrorException(
-        'Error al buscar el tour por slug.',
+        lang === 'en'
+          ? 'Error retrieving the tour by slug.'
+          : 'Error al buscar el tour por slug.',
       );
     }
   }
-  async getTopTours(): Promise<{
+
+  async getTopTours(lang: 'es' | 'en' = 'es'): Promise<{
     message: string;
-    data: Tour[];
+    data: any[];
   }> {
     try {
       const topTours = await this.tourModel
         .find()
-        .sort({ reviews: -1 }) // 👈 Ordena por reviews descendente
+        .sort({ reviews: -1 })
         .limit(10)
         .populate('transportOptionIds')
+        .lean() // Para trabajar con objetos planos
         .exec();
 
+      const translatedTours = topTours.map((tour) => ({
+        ...tour,
+        title: tour.title?.[lang] || '',
+        subtitle: tour.subtitle?.[lang] || '',
+        duration: tour.duration?.[lang] || '',
+        highlights: tour.highlights?.map((h) => h?.[lang] || '') || [],
+        includes: tour.includes?.map((i) => i?.[lang] || '') || [],
+        notIncludes: tour.notIncludes?.map((i) => i?.[lang] || '') || [],
+        toBring: tour.toBring?.map((i) => i?.[lang] || '') || [],
+        conditions: tour.conditions?.map((i) => i?.[lang] || '') || [],
+        itinerary:
+          tour.itinerary?.map((day) => ({
+            ...day,
+            title: day.title?.[lang] || '',
+            description: day.description?.[lang] || '',
+            route: day.route?.map((point) => ({
+              ...point,
+              location: point.location?.[lang] || '',
+              description: point.description?.[lang] || '',
+            })),
+          })) || [],
+      }));
+
       return {
-        message: 'Top 10 tours más populares.',
-        data: topTours,
+        message:
+          lang === 'en'
+            ? 'Top 10 most popular tours.'
+            : 'Top 10 tours más populares.',
+        data: translatedTours,
       };
     } catch {
       throw new InternalServerErrorException(
-        'Error al obtener los tours más populares.',
+        lang === 'en'
+          ? 'Error retrieving the most popular tours.'
+          : 'Error al obtener los tours más populares.',
       );
     }
   }
+
   async findTransportTours(paginationDto: PaginationDto): Promise<{
     message: string;
     data: Tour[];

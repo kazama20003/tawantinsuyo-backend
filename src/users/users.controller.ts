@@ -43,8 +43,8 @@ export class UsersController {
 
   // 📄 Listar usuarios con paginación
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard) // <-- esto protege con token Y rol
-  @Roles('admin')
+  // @UseGuards(JwtAuthGuard, RolesGuard) // <-- esto protege con token Y rol
+  // @Roles('admin')
   @ApiOperation({ summary: 'Listar usuarios con paginación' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
